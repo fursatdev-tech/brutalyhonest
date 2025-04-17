@@ -1,0 +1,730 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type Price {
+  inr String
+  usd String?
+}
+
+enum PriceEnum {
+  inr
+  usd
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId       String   @unique
+  name          String?
+  email         String   @unique
+  emailVerified Boolean?
+  phoneNumber   String?  @unique
+  phoneVerified Boolean? @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  favoriteIds   String[] @db.ObjectId
+  username      String?  @unique
+  invitedBy     String?
+
+  listings     Listing[]
+  reservations Reservation[]
+  review       Review[]
+
+  host            Host?
+  guestThread     Thread[]
+  account         Account?
+  stripeAccount   StripeAccount?
+  tours           Tours?
+  calendar        Calendar?
+  TourReservation TourReservation[]
+}
+
+model StripeAccount {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique
+  stripeAccountId String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  chargesEnabled  Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+}
+
+model Account {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String        @unique
+  accountType   AccountType   @default(savings)
+  preferredMode PreferredMode @default(vpa)
+  name          String?
+  accountNumber String?
+  ifsc          String?
+  paypal        String?
+  upi           String?
+
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+}
+
+model Listing {
+  id                       String        @id @default(auto()) @map("_id") @db.ObjectId
+  title                    String
+  description              String
+  imageUrl                 String
+  createdAt                DateTime      @default(now())
+  bedrooms                 Int
+  baths                    Int
+  guests                   Int
+  beds                     Int
+  images                   String[]      @default([])
+  listingLat               Float
+  listingLng               Float
+  location                 String
+  propertyType             String
+  roomType                 String
+  allowsChildren           Boolean       @default(true)
+  allowsInfants            Boolean       @default(true)
+  allowsPets               Boolean       @default(true)
+  categoryId               String        @db.ObjectId
+  status                   ListingStatus @default(draft)
+  perGuestPricing          Boolean       @default(false)
+  minNights                Int?
+  maxNights                Int?
+  valueRating              Float?
+  locationRating           Float?
+  communicationRating      Float?
+  checkinRating            Float?
+  accuracyRating           Float?
+  cleanlinessRating        Float?
+  guestSatisfactionOverall Float?
+  reviewsCount             Int?
+  originalPrice            Price
+  b2bPrice                 Price?
+  pgOriginalPrice          Price?
+  pgB2bPrice               Price?
+  assistantId              String?
+  discountedPrice          Price?
+
+  canInstantBook       Boolean  @default(false)
+  userId               String
+  hostId               String   @db.ObjectId
+  coHostIds            String[] @db.ObjectId
+  country              String   @default("India")
+  cancellationPolicyId String   @db.ObjectId
+  allowFreeStay        Boolean  @default(true)
+
+  amenities          Amenity[]
+  cancellationPolicy CancellationPolicy @relation(fields: [cancellationPolicyId], references: [id])
+  reservations       Reservation[]
+  review             Review[]
+  user               User               @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  host               Host               @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  coHost             ListingCohost[]
+  messages           Message[]
+  category           Category           @relation(fields: [categoryId], references: [id])
+}
+
+model ListingCohost {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  listingId String @db.ObjectId
+  hostId    String @db.ObjectId
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  host    Host    @relation(fields: [hostId], references: [id], onDelete: Cascade)
+}
+
+type Amenity {
+  title     String
+  amenities AmenityDetail[]
+}
+
+type AmenityDetail {
+  title     String
+  id        String?
+  icon      String?
+  subtitle  String?
+  available Boolean?
+  image     String?
+  images    String[]
+}
+
+model CancellationPolicy {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  title         String             @unique
+  subtitles     String[]
+  subtitlesHost String[]
+  listing       Listing[]
+  rules         CancellationRule[]
+}
+
+model CancellationRule {
+  id                   String           @id @default(auto()) @map("_id") @db.ObjectId
+  policyId             String           @db.ObjectId
+  type                 RuleType
+  condition            String
+  refundPercent        Int
+  paymentCalc          PaymentCalcType? // Enum for payment calculation type, if applicable
+  daysBeforeCheckIn    Int? // Days before check-in for the condition to apply
+  daysBeforeCheckInMax Int? // Days before check-in for the condition to apply
+  daysAfterBooking     Int? // Days after booking for the condition to apply
+  daysBeforeCheckOut   Int? // Days before check-out for the condition to apply
+  afterCheckIn         Boolean // True if the rule applies after booking
+  minStayLength        Int? // Minimum stay length in days for the rule to apply (e.g., 28 days for long-term stays)
+
+  cancellationPolicy CancellationPolicy @relation(fields: [policyId], references: [id])
+}
+
+model Host {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String?   @unique
+  name            String
+  hostEmail       String    @unique
+  hostPhone       String    @unique
+  profilePhotoUrl String?
+  languages       String?
+  responseRate    Float?
+  responseTime    String?
+  description     String?
+  isSuperhost     Boolean   @default(false)
+  joinedDate      DateTime? @default(now())
+  acceptedTerms   Boolean   @default(false)
+
+  user          User?           @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  listings      Listing[]
+  coListings    ListingCohost[]
+  Thread        Thread[]
+  surveys       ToursSurveys[]
+  revenue       Revenue[]
+  revenueCohost RevenueCohost[]
+  calendar      Calendar[]
+}
+
+model Tours {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  instagram       String?
+  facebook        String?
+  youtube         String?
+  interests       String[]
+  hostedBefore    Boolean  @default(false)
+  prevHostedTrips String?
+  prevAvgCost     String?
+  userId          String   @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  surveys ToursSurveys[]
+
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+}
+
+model ToursSurveys {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  email          String
+  firstName      String
+  lastName       String
+  gender         Gender
+  age            Int
+  budget         Int
+  location       TripLocation
+  estimatedTrips String?
+  profession     String?
+  purpose        String?
+
+  destinations      SurveyDestination[]
+  otherDestinations SurveyOtherDestination[]
+  months            SurveyMonth[]
+  tripDuration      SurveyDuration[]
+  tripActivities    SurveyActivity[]
+
+  toursId     String @db.ObjectId
+  hostClerkId String
+  tour        Tours  @relation(fields: [toursId], references: [id], onDelete: Cascade)
+  host        Host   @relation(fields: [hostClerkId], references: [userId], onDelete: Cascade)
+}
+
+model Destination {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  value String
+
+  seleted SurveyDestination[]
+}
+
+model SurveyDestination {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  destination   Destination  @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  destinationId String       @db.ObjectId
+  survey        ToursSurveys @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId      String       @db.ObjectId
+}
+
+model OtherDestination {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  value String
+
+  seleted SurveyOtherDestination[]
+}
+
+model SurveyOtherDestination {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  destination   OtherDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  destinationId String           @db.ObjectId
+  survey        ToursSurveys     @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId      String           @db.ObjectId
+}
+
+model Month {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  value String
+
+  seleted SurveyMonth[]
+}
+
+model SurveyMonth {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  month    Month        @relation(fields: [monthId], references: [id], onDelete: Cascade)
+  monthId  String       @db.ObjectId
+  survey   ToursSurveys @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId String       @db.ObjectId
+}
+
+model Duration {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  value String
+
+  seleted SurveyDuration[]
+}
+
+model SurveyDuration {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  duration   Duration     @relation(fields: [durationId], references: [id], onDelete: Cascade)
+  durationId String       @db.ObjectId
+  survey     ToursSurveys @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId   String       @db.ObjectId
+}
+
+model Activity {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  value String
+
+  seleted SurveyActivity[]
+}
+
+model SurveyActivity {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  activity   Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId String       @db.ObjectId
+  survey     ToursSurveys @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  surveyId   String       @db.ObjectId
+}
+
+type TripLocation {
+  city    String
+  state   String
+  country String
+}
+
+model Reservation {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String
+  listingId     String            @db.ObjectId
+  startDate     DateTime
+  endDate       DateTime
+  currency      PriceEnum         @default(inr)
+  totalPrice    Int
+  createdAt     DateTime          @default(now())
+  paymentAt     DateTime?
+  updatedAt     DateTime          @updatedAt
+  status        ReservationStatus @default(pending)
+  paymentIntent String?
+  paymentStatus PaymentStatus     @default(pending)
+  adults        Int               @default(1)
+  children      Int               @default(0)
+  infants       Int               @default(0)
+  pets          Int               @default(0)
+  nights        Int               @default(1)
+  refundAmount  Int               @default(0)
+
+  priceBreakup PriceBreakup?
+  review       Review?
+
+  user     User      @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  listing  Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  messages Message[]
+  revenue  Revenue?
+
+  @@unique([userId, listingId, startDate, endDate])
+}
+
+model Revenue {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  reservationId String   @unique @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  hostId        String   @db.ObjectId
+  coHostId      String[] @db.ObjectId
+  earning       Int      @default(0)
+  hostEarning   Int      @default(0)
+  coHostEarning Int      @default(0)
+
+  cohost      RevenueCohost[]
+  host        Host            @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  reservation Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model RevenueCohost {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  revenueId String @db.ObjectId
+  hostId    String @db.ObjectId
+
+  host    Host    @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  revenue Revenue @relation(fields: [revenueId], references: [id])
+}
+
+model PriceBreakup {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  reservationId     String    @unique @db.ObjectId
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  basePrice         Int       @default(0)
+  transactionFee    Int       @default(0)
+  extraGuestCharges Int       @default(0)
+  total             Int       @default(0)
+  currency          PriceEnum @default(inr)
+  tax               Int       @default(0)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id                       String       @id @default(auto()) @map("_id") @db.ObjectId
+  valueRating              Int?
+  locationRating           Int?
+  communicationRating      Int?
+  checkinRating            Int?
+  accuracyRating           Int?
+  cleanlinessRating        Int?
+  guestSatisfactionOverall Int?
+  checkinFeedback          String?
+  cleanlinessFeedback      String?
+  accuracyFeedback         String?
+  communicationFeedback    String?
+  locationFeedback         String?
+  publicFeedback           String?
+  privateNote              String?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  status                   ReviewStatus @default(draft)
+
+  userId        String
+  reservationId String @unique @db.ObjectId
+  listingId     String @db.ObjectId
+
+  user        User?        @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  listing     Listing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  reservationId String   @db.ObjectId
+  listingId     String   @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  thread        Thread[]
+  gptThreadId   String?
+
+  listing     Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model Thread {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  role           UserRole         @default(system)
+  actions        MessageActions[]
+  messageId      String           @db.ObjectId
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  isUnread       Boolean          @default(true)
+  actionCategory ActionCategories @default(none)
+
+  guestId  String
+  hostId   String  @db.ObjectId
+  imageUrl String?
+  text     String?
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  guest   User    @relation(fields: [guestId], references: [clerkId], onDelete: Cascade)
+  host    Host    @relation(fields: [hostId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  label       String
+  icon        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  listings Listing[]
+}
+
+model Policy {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String   @unique
+  content     String
+  place       String
+  lastUpdated DateTime @updatedAt
+}
+
+model Calendar {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique
+  hostId String @unique @db.ObjectId
+
+  events CalendarEvent[]
+
+  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  host Host @relation(fields: [hostId], references: [id], onDelete: Cascade)
+}
+
+model CalendarEvent {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  start       DateTime @default(now())
+  end         DateTime
+  allDay      Boolean  @default(false)
+
+  calendarId String   @db.ObjectId
+  calendar   Calendar @relation(fields: [calendarId], references: [id])
+}
+
+model TourReservation {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String
+  tourId        String            @db.ObjectId
+  startDate     DateTime
+  endDate       DateTime
+  totalPrice    Int
+  createdAt     DateTime          @default(now())
+  paymentAt     DateTime?
+  updatedAt     DateTime          @updatedAt
+  status        ReservationStatus @default(pending)
+  paymentIntent String?
+  paymentStatus PaymentStatus     @default(pending)
+  refundAmount  Int               @default(0)
+  currency      PriceEnum         @default(inr)
+
+  priceBreakup TourPriceBreakup
+
+  user    User        @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  package TourPackage @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tourId, startDate, endDate])
+}
+
+type TourPriceBreakup {
+  basePrice      Int @default(0)
+  transactionFee Int @default(0)
+  total          Int @default(0)
+  tax            Int @default(0)
+}
+
+model TourPackage {
+  id                    String            @id @default(auto()) @map("_id") @db.ObjectId
+  name                  String
+  duration              String
+  accommodationImages   PackageImages[]
+  accommodationStar     Int[]
+  accommodationLocation String[]
+  accommodationName     String[]
+  bookingScore          Float[]
+  bookingPropertyUrl    String[]
+  daysSpent             Int
+  groupSizeMin          Int
+  groupSizeMax          Int
+  inclusions            String[]
+  exclusions            String[]
+  activities            String[]
+  activityDaySequence   String[]
+  itinerary             String
+  natureOfTravel        String
+  difficultyLevel       Int
+  costPrice             Price
+  sellingPrice          Price
+  subtitle              String
+  startDate             DateTime
+  endDate               DateTime
+  citiesTraveling       String[]
+  guidesTips            String
+  dayActivities         DayActivity[]
+  hotelDetails          HotelDetails[]
+  tourReservation       TourReservation[]
+  videoUrl              String
+  summary               String
+  isLive                Boolean           @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+type PackageImages {
+  urls String[]
+}
+
+type DayActivity {
+  day              Int
+  accomodationCity String
+  hotel            String
+  morning          PackageActivity[]
+  afternoon        PackageActivity[]
+  evening          PackageActivity[]
+}
+
+type MessageActions {
+  type  ActionTypes
+  label String
+}
+
+type PackageActivity {
+  time        String
+  description String
+}
+
+type HotelDetails {
+  city              String
+  stay              Int
+  address           String
+  name              String
+  facilityHighlight FacilityHighlight[]
+  photo             HotelPhoto[]
+  latitude          Float
+  longitude         Float
+}
+
+type HotelPhoto {
+  id           Int
+  photoUri     String
+  ranking      Int
+  thumbnailUri String
+}
+
+type FacilityHighlight {
+  id    Int
+  level String
+  title String
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  canceled
+  completed
+  rejected
+}
+
+enum ReviewStatus {
+  draft
+  submitted
+  published
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum UserRole {
+  guest
+  host
+  system
+  assistant
+}
+
+enum ActionTypes {
+  btnAccept
+  btnReject
+  url
+}
+
+enum ActionCategories {
+  none
+  approval
+}
+
+enum ListingStatus {
+  draft
+  published
+  unpublished
+  deleted
+}
+
+enum RuleType {
+  FULL_REFUND
+  PARTIAL_REFUND
+  NO_REFUND
+}
+
+enum PaymentCalcType {
+  PER_NIGHT_PLUS_ONE
+  PER_NIGHT_PLUS_HALF_UNSPENT
+  ALL_NIGHTS
+  NEXT_30_NIGHTS
+}
+
+enum Gender {
+  male
+  female
+  nb
+}
+
+enum AccountType {
+  savings
+  current
+}
+
+enum PreferredMode {
+  vpa
+  bank
+  paypal
+}
+
+model TravelSection {
+  id      String        @id @default(auto()) @map("_id") @db.ObjectId
+  tourId  String
+  options TravelGuide[]
+}
+
+type TravelGuide {
+  name    String
+  title   String
+  content Json[]
+  links   LinkType[]
+  tip     String?
+}
+
+type LinkType {
+  name String
+  url  String
+}

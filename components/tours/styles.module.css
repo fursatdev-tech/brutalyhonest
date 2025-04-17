@@ -1,0 +1,8 @@
+.img {
+  @apply cursor-pointer object-cover object-center hover:brightness-[60%] transition duration-300 ease-in-out;
+}
+
+.guestTrigger[data-state="open"] svg {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease;
+}

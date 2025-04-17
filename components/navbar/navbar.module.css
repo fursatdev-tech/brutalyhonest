@@ -1,0 +1,5 @@
+.hostBorder:before {
+  content: "";
+
+  @apply h-1 w-6 rounded-full absolute bottom-0 left-[50%] -ml-3 text-secondary bg-secondary;
+}

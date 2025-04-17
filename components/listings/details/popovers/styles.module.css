@@ -1,0 +1,11 @@
+.inputOuter {
+  @apply px-3 pt-0 border-2 focus-within:border-secondary rounded-lg space-y-0;
+}
+
+.title {
+  @apply text-xs font-bold pt-3;
+}
+
+.input {
+  @apply border-0 py-0 pl-0 h-fit w-32 rounded-none;
+}
