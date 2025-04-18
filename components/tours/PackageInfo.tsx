@@ -1,10 +1,10 @@
 import { DayActivity, HotelDetails, PackageActivity } from "@prisma/client";
-import { IoAirplaneOutline } from "react-icons/io5";
-import { LuPlaneTakeoff } from "react-icons/lu";
-import { GiCheckMark, GiCrossMark } from "react-icons/gi";
 import Image from "next/image";
-import { IoLocationOutline } from "react-icons/io5";
+import { GiCheckMark, GiCrossMark } from "react-icons/gi";
+import { IoAirplaneOutline, IoLocationOutline } from "react-icons/io5";
+import { LuPlaneTakeoff } from "react-icons/lu";
 
+import ReactStarsWrapper from "@/components/tours/ReactStarsWrapper";
 import {
   Carousel,
   CarouselContent,
@@ -12,7 +12,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import ReactStarsWrapper from "@/components/tours/ReactStarsWrapper";
+import HotelDetailCard from './HotelDetailCard';
 
 interface Props {
   dayActivities: DayActivity[];
@@ -135,23 +135,29 @@ export default function PackageInfo({
               </div>
 
               <div className="md:divide-y-2 ">
-                {activities.map((activity) => (
-                  <div
-                    key={activity.day}
-                    className="grid grid-cols-3 md:grid-cols-4 px-3 pt-3 gap-2 "
-                  >
-                    <h5 className="uppercase px-2 max-md:border-b-2 text-muted-foreground py-1 pt-3 col-span-3 md:col-span-1 ">
-                      Day {activity.day < 9 && 0}
-                      {activity.day + 1}
-                    </h5>
+                {activities.map((activity) => {
+                  return (
+                    <div
+                      key={activity.day}
+                      className="grid grid-cols-3 md:grid-cols-4 px-3 pt-3 gap-2 "
+                    >
+                      <h5 className="uppercase  md:flex-col  max-md:items-center max-md:justify-between  flex gap-2 px-2 justify-start max-md:border-b-2 text-muted-foreground py-1 pt-3 col-span-3 md:col-span-1 ">
+                        <span>
+                        Day {activity.day < 9 && 0}
+                        {activity.day + 1}
+                        </span>
+                        <HotelDetailCard activity={activity} hotelDetails={hotelDetails}/>
 
-                    <div className="col-span-3 grid md:grid-cols-3 w-full gap-2 p-2">
-                      <Event time="morning" events={activity.morning} />
-                      <Event time="afternoon" events={activity.afternoon} />
-                      <Event time="evening" events={activity.evening} />
+                      </h5>
+
+                      <div className="col-span-3 grid md:grid-cols-3 w-full gap-2 p-2">
+                        <Event time="morning" events={activity.morning} />
+                        <Event time="afternoon" events={activity.afternoon} />
+                        <Event time="evening" events={activity.evening} />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
