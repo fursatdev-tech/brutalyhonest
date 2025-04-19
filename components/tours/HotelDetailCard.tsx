@@ -30,12 +30,20 @@ const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
         ? activity.hotel.split("or similar")[0].trim()
         : activity.hotel.trim()
 
+      if (!filteredHotelName) {
+        throw new Error('Invalid hotel name')
+      }
+
       const destinationResults = await searchHotelByDestination(filteredHotelName)
-      if (destinationResults.length === 0) {
-        throw new Error('No destination found')
+      if (!destinationResults || destinationResults.length === 0) {
+        throw new Error('No destination found for this hotel')
       }
 
       const { dest_id, city_name, country } = destinationResults[0]
+
+      if (!dest_id) {
+        throw new Error('Invalid destination ID')
+      }
 
       const hotels = await searchHotels(
         dest_id,
@@ -44,13 +52,14 @@ const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
         new Date(Date.now() + 86400000 + 86400000).toISOString().split('T')[0]
       )
 
-      const  res= await searchHotels("1976693")
-      console.log("THIS IS A TEST RESPONSE",res[0])
+      if (!hotels || hotels.length === 0) {
+        throw new Error('No hotels found for this destination')
+      }
 
       const hotelResult = hotels[0]
 
-      if (!hotelResult) {
-        throw new Error('Hotel not found')
+      if (!hotelResult || !hotelResult.property) {
+        throw new Error('Invalid hotel data received')
       }
 
       setHotel({
@@ -73,7 +82,7 @@ const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
       if (error instanceof Error) {
         setError(error.message)
       } else {
-        setError('An unexpected error occurred')
+        setError('An unexpected error occurred while fetching hotel details')
       }
     } finally {
       setLoading(false)

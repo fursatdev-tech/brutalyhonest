@@ -43,6 +43,9 @@ interface HotelDetailsResult {
 }
 
 export async function searchHotelByDestination(query: string): Promise<HotelSearchResult[]> {
+  if (!query) {
+    throw new Error('Query parameter is required')
+  }
 
   const url = `https://booking-com15.p.rapidapi.com/api/v1/hotels/searchDestination?query=${encodeURIComponent(query)}`;
   const options = {
@@ -64,9 +67,11 @@ export async function searchHotelByDestination(query: string): Promise<HotelSear
     }
 
     const result = await response.json();
-    console.log("SearchByDestinationResponse", result);
 
-    if (result.status && result.data) {
+    if (!result || !result.status || !result.data) {
+      throw new Error('Invalid API response format');
+    }
+
       return result.data.map((item: any) => ({
         dest_id: item.dest_id,
         latitude: item.latitude,
@@ -75,8 +80,6 @@ export async function searchHotelByDestination(query: string): Promise<HotelSear
         city_name: item.city_name,
         country: item.country
       }));
-    }
-    return [];
   } catch (error) {
     console.error('Error searching hotel by destination:', error);
     throw error;
@@ -89,14 +92,11 @@ export async function searchHotels(
   arrival_date: string = new Date(Date.now() + 86400000).toISOString().split('T')[0],
   departure_date: string = new Date(Date.now() + 86400000 + 86400000).toISOString().split('T')[0],
 ): Promise<HotelDetailsResult[]> {
+  if (!dest_id) {
+    throw new Error('Destination ID is required');
+  }
 
-  console.log("DEST_ID", dest_id);
-  console.log("SEARCH_TYPE", search_type);
-  console.log("ARRIVAL_DATE", arrival_date);
-  console.log("DEPARTURE_DATE", departure_date);
-
-
-  const url = `https://booking-com15.p.rapidapi.com/api/v1/hotels/searchHotels?dest_id=${dest_id}&search_type=${search_type}&arrival_date=${arrival_date}&departure_date=${departure_date}&units=metric&temperature_unit=c`
+  const url = `https://booking-com15.p.rapidapi.com/api/v1/hotels/searchHotels?dest_id=${dest_id}&search_type=${search_type}&arrival_date=${arrival_date}&departure_date=${departure_date}&units=metric&temperature_unit=c`;
 
   const options = {
     method: 'GET',
@@ -117,9 +117,11 @@ export async function searchHotels(
     }
 
     const result = await response.json();
-    console.log("SearchHotelsResponse", result);
 
-    if (result.status && result.data && result.data.hotels) {
+    if (!result || !result.status || !result.data || !result.data.hotels) {
+      throw new Error('Invalid API response format');
+    }
+
       return result.data.hotels.map((hotel: any) => ({
         hotel_id: hotel.hotel_id,
         accessibilityLabel: hotel.accessibilityLabel,
@@ -131,7 +133,7 @@ export async function searchHotels(
           latitude: hotel.property.latitude,
           longitude: hotel.property.longitude,
           mainPhotoId: hotel.property.mainPhotoId,
-          photoUrls: hotel.property.photoUrls,
+        photoUrls: hotel.property.photoUrls || [],
           priceBreakdown: {
             grossPrice: hotel.property.priceBreakdown.grossPrice,
             strikethroughPrice: hotel.property.priceBreakdown.strikethroughPrice,
@@ -140,8 +142,6 @@ export async function searchHotels(
           }
         }
       }));
-    }
-    return [];
   } catch (error) {
     console.error('Error searching hotels:', error);
     throw error;

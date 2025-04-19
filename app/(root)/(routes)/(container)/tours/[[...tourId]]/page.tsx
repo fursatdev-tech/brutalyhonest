@@ -13,6 +13,8 @@ import prismadb from '@/lib/prismadb'
 import TravelGuide from '@/components/tours/TravelGuide'
 import RecommendedAirbnbs from '@/components/tours/RecommendedAirbnbs'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{
     tourId: string[]
