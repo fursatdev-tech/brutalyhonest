@@ -6,7 +6,31 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ExternalLinkIcon } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { IoClose, IoLocationOutline } from 'react-icons/io5'
+import { IoClose, IoLocationOutline, IoTimeOutline, IoBedOutline, IoStarOutline } from 'react-icons/io5'
+import { GiCheckMark } from 'react-icons/gi'
+import { TbBuildingSkyscraper } from 'react-icons/tb'
+import { MdOutlinePolicy } from 'react-icons/md'
+
+interface RoomType {
+  name: string;
+  maxOccupancy: number;
+  bedTypes: string[];
+  roomSize: string;
+  amenities: string[];
+}
+
+interface HotelPolicies {
+  checkIn: string;
+  checkOut: string;
+  cancellation: string;
+}
+
+interface ExtendedHotelDetails extends HotelDetails {
+  reviewScore?: number;
+  reviewCount?: number;
+  roomTypes?: RoomType[];
+  policies?: HotelPolicies;
+}
 
 interface Props {
   activity: DayActivity
@@ -15,7 +39,7 @@ interface Props {
 
 const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [hotel, setHotel] = useState<HotelDetails | null>(null)
+  const [hotel, setHotel] = useState<ExtendedHotelDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -67,7 +91,11 @@ const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
         stay: 1,
         address: `${city_name}, ${country}`,
         name: hotelResult.property.name,
-        facilityHighlight: [],
+        facilityHighlight: hotelResult.property.facilities?.map(facility => ({
+          id: Math.floor(Math.random() * 1000),
+          level: 'standard',
+          title: facility.name
+        })) || [],
         photo: [{
           id: 1,
           photoUri: hotelResult.property.photoUrls[0] || '',
@@ -75,7 +103,11 @@ const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
           thumbnailUri: hotelResult.property.photoUrls[0] || ''
         }],
         latitude: hotelResult.property.latitude,
-        longitude: hotelResult.property.longitude
+        longitude: hotelResult.property.longitude,
+        reviewScore: hotelResult.property.reviewScore,
+        reviewCount: hotelResult.property.reviewCount,
+        roomTypes: hotelResult.property.roomTypes,
+        policies: hotelResult.property.policies
       })
     } catch (error) {
       console.error('Error fetching hotel details:', error)
@@ -154,61 +186,142 @@ const HotelDetailCard = ({ activity, hotelDetails }: Props) => {
                     </div>
                   ) : hotel ? (
                     <div className="mx-auto max-w-3xl">
-                      <h3 className="text-2xl font-bold mb-4">{hotel.name}</h3>
-
-                      <div className="space-y-4">
+                      <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-8">
                         <div>
-                          <h4 className="font-semibold mb-2">Location</h4>
-                          <p className="text-muted-foreground flex items-center gap-1">
-                            <IoLocationOutline size={16} />
-                            <span>{hotel.address}</span>
-                          </p>
+                          <h3 className="text-2xl font-bold">{hotel.name}</h3>
+                          <p className="text-muted-foreground mt-1">{hotel.address}</p>
+                        </div>
+                        {hotel.reviewScore && (
+                          <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+                            <IoStarOutline className="text-primary" size={20} />
+                            <span className="font-bold">{hotel.reviewScore}</span>
+                            <span className="text-muted-foreground text-sm">
+                              ({hotel.reviewCount} reviews)
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                          <div className="bg-muted/50 p-4 rounded-lg">
+                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                              <IoLocationOutline size={20} />
+                              Location
+                            </h4>
+                            <p className="text-muted-foreground">
+                              {hotel.address}
+                            </p>
+                          </div>
+
+                          {hotel.roomTypes && hotel.roomTypes.length > 0 && (
+                            <div className="bg-muted/50 p-4 rounded-lg">
+                              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                <IoBedOutline size={20} />
+                                Room Types
+                              </h4>
+                              <div className="space-y-4">
+                                {hotel.roomTypes.map((room, index) => (
+                                  <div key={index} className="border rounded-lg p-4 bg-background">
+                                    <h5 className="font-medium mb-2">{room.name}</h5>
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                                      <p className="flex items-center gap-1">
+                                        <TbBuildingSkyscraper size={16} />
+                                        {room.roomSize}
+                                      </p>
+                                      <p className="flex items-center gap-1">
+                                        <IoBedOutline size={16} />
+                                        {room.maxOccupancy} guests
+                                      </p>
+                                      {room.bedTypes && room.bedTypes.length > 0 && (
+                                        <p className="col-span-2">Bed Types: {room.bedTypes.join(', ')}</p>
+                                      )}
+                                      {room.amenities && room.amenities.length > 0 && (
+                                        <div className="col-span-2">
+                                          <p className="font-medium mb-1">Amenities:</p>
+                                          <div className="grid grid-cols-2 gap-1">
+                                            {room.amenities.map((amenity, i) => (
+                                              <p key={i} className="flex items-center gap-1 text-sm">
+                                                <GiCheckMark className="text-green-500" />
+                                                {amenity}
+                                              </p>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {hotel.policies && (
+                            <div className="bg-muted/50 p-4 rounded-lg">
+                              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                <MdOutlinePolicy size={20} />
+                                Policies
+                              </h4>
+                              <div className="space-y-2 text-sm text-muted-foreground">
+                                <p className="flex items-center gap-2">
+                                  <IoTimeOutline size={16} />
+                                  Check-in: {hotel.policies.checkIn}
+                                </p>
+                                <p className="flex items-center gap-2">
+                                  <IoTimeOutline size={16} />
+                                  Check-out: {hotel.policies.checkOut}
+                                </p>
+                                <p className="flex items-center gap-2">
+                                  <MdOutlinePolicy size={16} />
+                                  Cancellation: {hotel.policies.cancellation}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
-                        <div>
-                          <h4 className="font-semibold mb-2">Stay</h4>
-                          <p className="text-muted-foreground">
-                            {hotel.stay} night{hotel.stay > 1 ? 's' : ''}
-                          </p>
-                        </div>
-
-                        {hotel.facilityHighlight &&
-                          hotel.facilityHighlight.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold mb-2">Facilities</h4>
+                        <div className="space-y-6">
+                          {hotel.facilityHighlight && hotel.facilityHighlight.length > 0 && (
+                            <div className="bg-muted/50 p-4 rounded-lg">
+                              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                <TbBuildingSkyscraper size={20} />
+                                Facilities
+                              </h4>
                               <div className="grid grid-cols-2 gap-2">
                                 {hotel.facilityHighlight.map((facility) => (
                                   <p
                                     key={facility.id}
-                                    className="text-muted-foreground"
+                                    className="text-muted-foreground flex items-center gap-1 text-sm"
                                   >
-                                    • {facility.title}
+                                    <GiCheckMark className="text-green-500" />
+                                    {facility.title}
                                   </p>
                                 ))}
                               </div>
                             </div>
                           )}
 
-                        {hotel.photo && hotel.photo.length > 0 && (
-                          <div>
-                            <h4 className="font-semibold mb-2">Photos</h4>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              {hotel.photo.map((photo) => (
-                                <div
-                                  key={photo.id}
-                                  className="relative aspect-video"
-                                >
-                                  <Image
-                                    src={photo.photoUri}
-                                    alt={hotel.name}
-                                    fill
-                                    className="object-cover rounded-lg"
-                                  />
-                                </div>
-                              ))}
+                          {hotel.photo && hotel.photo.length > 0 && (
+                            <div className="bg-muted/50 p-4 rounded-lg">
+                              <h4 className="font-semibold mb-3">Photos</h4>
+                              <div className="grid grid-cols-2 gap-4">
+                                {hotel.photo.map((photo) => (
+                                  <div
+                                    key={photo.id}
+                                    className="relative aspect-video rounded-lg overflow-hidden"
+                                  >
+                                    <Image
+                                      src={photo.photoUri}
+                                      alt={hotel.name}
+                                      fill
+                                      className="object-cover hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : (

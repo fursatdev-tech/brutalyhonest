@@ -21,6 +21,13 @@ interface HotelDetailsResult {
     longitude: number;
     mainPhotoId: number;
     photoUrls: string[];
+    roomTypes?: Array<{
+      name: string;
+      maxOccupancy: number;
+      bedTypes: string[];
+      roomSize: string;
+      amenities: string[];
+    }>;
     priceBreakdown: {
       grossPrice: {
         value: number;
@@ -38,6 +45,15 @@ interface HotelDetailsResult {
         text: string;
         explanation: string;
       }>;
+    };
+    facilities?: Array<{
+      name: string;
+      category: string;
+    }>;
+    policies?: {
+      checkIn: string;
+      checkOut: string;
+      cancellation: string;
     };
   };
 }
@@ -122,26 +138,42 @@ export async function searchHotels(
       throw new Error('Invalid API response format');
     }
 
-      return result.data.hotels.map((hotel: any) => ({
-        hotel_id: hotel.hotel_id,
-        accessibilityLabel: hotel.accessibilityLabel,
-        property: {
-          name: hotel.property.name,
-          reviewScore: hotel.property.reviewScore,
-          reviewScoreWord: hotel.property.reviewScoreWord,
-          reviewCount: hotel.property.reviewCount,
-          latitude: hotel.property.latitude,
-          longitude: hotel.property.longitude,
-          mainPhotoId: hotel.property.mainPhotoId,
+    return result.data.hotels.map((hotel: any) => ({
+      hotel_id: hotel.hotel_id,
+      accessibilityLabel: hotel.accessibilityLabel,
+      property: {
+        name: hotel.property.name,
+        reviewScore: hotel.property.reviewScore,
+        reviewScoreWord: hotel.property.reviewScoreWord,
+        reviewCount: hotel.property.reviewCount,
+        latitude: hotel.property.latitude,
+        longitude: hotel.property.longitude,
+        mainPhotoId: hotel.property.mainPhotoId,
         photoUrls: hotel.property.photoUrls || [],
-          priceBreakdown: {
-            grossPrice: hotel.property.priceBreakdown.grossPrice,
-            strikethroughPrice: hotel.property.priceBreakdown.strikethroughPrice,
-            excludedPrice: hotel.property.priceBreakdown.excludedPrice,
-            benefitBadges: hotel.property.priceBreakdown.benefitBadges
-          }
+        roomTypes: hotel.property.roomTypes?.map((room: any) => ({
+          name: room.name,
+          maxOccupancy: room.maxOccupancy,
+          bedTypes: room.bedTypes,
+          roomSize: room.roomSize,
+          amenities: room.amenities
+        })),
+        facilities: hotel.property.facilities?.map((facility: any) => ({
+          name: facility.name,
+          category: facility.category
+        })),
+        policies: hotel.property.policies ? {
+          checkIn: hotel.property.policies.checkIn,
+          checkOut: hotel.property.policies.checkOut,
+          cancellation: hotel.property.policies.cancellation
+        } : undefined,
+        priceBreakdown: {
+          grossPrice: hotel.property.priceBreakdown.grossPrice,
+          strikethroughPrice: hotel.property.priceBreakdown.strikethroughPrice,
+          excludedPrice: hotel.property.priceBreakdown.excludedPrice,
+          benefitBadges: hotel.property.priceBreakdown.benefitBadges
         }
-      }));
+      }
+    }));
   } catch (error) {
     console.error('Error searching hotels:', error);
     throw error;
