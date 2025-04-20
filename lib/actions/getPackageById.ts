@@ -1,13 +1,15 @@
 import prismadb from "@/lib/prismadb";
 
-export default async function getPackageById(packageId: string) {
-  if (!packageId) throw new Error("Tour package not found");
+export default async function getPackage(identifier: string) {
+  if (!identifier) throw new Error("Tour package not found");
 
   try {
-    const foundPackage = await prismadb.tourPackage.findUnique({
-      where: {
-        id: packageId,
-      },
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
+
+    const foundPackage = await prismadb.tourPackage.findFirst({
+      where: isObjectId
+        ? { id: identifier }
+        : { name: decodeURIComponent(identifier) },
       select: {
         id: true,
         name: true,

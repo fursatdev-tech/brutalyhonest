@@ -58,7 +58,7 @@ const PackageCard = async ({ data }: CardProps) => {
 
         <Link
           prefetch={true}
-          href={`/tours/${data.id}`}
+          href={`/tours/${encodeURIComponent(data.name)}`}
           className="text-xs md:text-sm group flex flex-col flex-1 overflow-hidden"
         >
           <p className="font-semibold text-base line-clamp-2">

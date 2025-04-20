@@ -22,7 +22,7 @@ interface Props {
   transactionFee: number;
   currency: PriceEnum;
   guestCount: number;
-  
+
 }
 
 export default function BookPackage({

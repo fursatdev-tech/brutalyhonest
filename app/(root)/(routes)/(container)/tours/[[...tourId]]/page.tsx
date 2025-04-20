@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { cache } from 'react'
 
-import getPackageById from '@/lib/actions/getPackageById'
+import getPackage from '@/lib/actions/getPackageById'
 import PackageHead from '@/components/tours/PackageHead'
 import PackageInfo from '@/components/tours/PackageInfo'
 import PackageReservationWrapper from '@/components/tours/PackageReservationWrapper'
@@ -21,8 +21,8 @@ interface PageProps {
   }>
 }
 
-const getPackageCache = cache(async (id: string) => {
-  if (!id)
+const getPackageCache = cache(async (identifier: string) => {
+  if (!identifier)
     return {
       id: '',
       name: 'Tour',
@@ -58,7 +58,7 @@ const getPackageCache = cache(async (id: string) => {
       isLive: false,
     }
 
-  return await getPackageById(id)
+  return await getPackage(identifier)
 })
 
 export async function generateMetadata({
@@ -66,14 +66,14 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const currentParams = await params
 
-  const id = currentParams.tourId ? currentParams.tourId[0] : ''
+  const identifier = currentParams.tourId ? currentParams.tourId[0] : ''
 
   const {
     name,
     duration,
     accommodationImages,
     subtitle: description,
-  } = await getPackageCache(id)
+  } = await getPackageCache(identifier)
 
   const title = `${name} - ${duration}`
 
@@ -81,13 +81,13 @@ export async function generateMetadata({
 
   return {
     title,
-    metadataBase: new URL(`${process.env.META_URL}/tours/${id}`),
+    metadataBase: new URL(`${process.env.META_URL}/tours/${encodeURIComponent(name)}`),
     openGraph: {
       title,
       description,
       type: 'website',
       siteName: 'BrutalyHonest',
-      url: `${process.env.META_URL}/tours/${id}`,
+      url: `${process.env.META_URL}/tours/${encodeURIComponent(name)}`,
       images: {
         url: 'https://brutalyhonest.ai/images/meta.jpg',
         alt: 'BrutalyHonest',
@@ -104,11 +104,15 @@ export async function generateMetadata({
 }
 
 export async function generateStaticParams() {
-  return await prismadb.tourPackage.findMany({
+  const packages = await prismadb.tourPackage.findMany({
     select: {
-      id: true,
+      name: true,
     },
   })
+
+  return packages.map((pkg) => ({
+    tourId: [encodeURIComponent(pkg.name)],
+  }))
 }
 
 const PackageDetails = async ({ params }: PageProps) => {

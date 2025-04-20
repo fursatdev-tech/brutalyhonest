@@ -1,52 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-import Cors from "micro-cors";
+import { NextRequest, NextResponse } from 'next/server'
+import Stripe from 'stripe'
+import Cors from 'micro-cors'
 import {
   ActionCategories,
   ActionTypes,
   PaymentStatus,
   PriceBreakup,
-} from "@prisma/client";
-import axios from "axios";
+} from '@prisma/client'
+import axios from 'axios'
 
-import prismadb from "@/lib/prismadb";
-import { stripe } from "@/lib/actions/stripe";
-import { MODE_URL } from "@/util/constants";
+import prismadb from '@/lib/prismadb'
+import { stripe } from '@/lib/actions/stripe'
+import { MODE_URL } from '@/util/constants'
 
 const cors = Cors({
-  allowMethods: ["POST", "HEAD"],
-});
+  allowMethods: ['POST', 'HEAD'],
+})
 
-const webhookSecret: string = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret: string = process.env.STRIPE_WEBHOOK_SECRET!
 
 export async function POST(req: NextRequest) {
-  const payload = await req.text();
-  const sig = req.headers.get("stripe-signature")!;
+  const payload = await req.text()
+  const sig = req.headers.get('stripe-signature')!
 
-  let event: Stripe.Event;
+  let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(payload, sig, webhookSecret);
+    event = stripe.webhooks.constructEvent(payload, sig, webhookSecret)
 
     if (
-      event.type !== "checkout.session.completed" &&
-      event.type !== "checkout.session.expired" &&
-      event.type !== "checkout.session.async_payment_failed"
+      event.type !== 'checkout.session.completed' &&
+      event.type !== 'checkout.session.expired' &&
+      event.type !== 'checkout.session.async_payment_failed'
     )
-      return NextResponse.json("Unhandled event type");
+      return NextResponse.json('Unhandled event type')
 
-    const metadata = event.data.object.metadata;
+    const metadata = event.data.object.metadata
 
-    const paymentIntent = event.data.object.payment_intent as string;
+    const paymentIntent = event.data.object.payment_intent as string
 
-    if (!metadata) return NextResponse.json("No metadata");
+    if (!metadata) return NextResponse.json('No metadata')
 
     const {
-      listingId = "",
-      reservationId = "",
-      clerkId = "",
-      tourId = "",
-    } = metadata;
+      listingId = '',
+      reservationId = '',
+      clerkId = '',
+      tourId = '',
+    } = metadata
 
     const user = await prismadb.user.findUnique({
       where: {
@@ -55,26 +55,26 @@ export async function POST(req: NextRequest) {
       select: {
         clerkId: true,
       },
-    });
+    })
 
-    if (!user) return NextResponse.json("USER NOT FOUND");
+    if (!user) return NextResponse.json('USER NOT FOUND')
 
     if (
-      event.type === "checkout.session.expired" ||
-      event.type === "checkout.session.async_payment_failed"
+      event.type === 'checkout.session.expired' ||
+      event.type === 'checkout.session.async_payment_failed'
     ) {
-      await updateReservationPayFail(reservationId, paymentIntent, tourId);
+      await updateReservationPayFail(reservationId, paymentIntent, tourId)
 
-      return NextResponse.json("Received");
+      return NextResponse.json('Received')
     }
 
     const reservation = await updateReservationPaySuccess(
       reservationId,
       paymentIntent,
       tourId
-    );
+    )
 
-    if (tourId) return NextResponse.json("Received. Tour. Done");
+    if (tourId) return NextResponse.json('Received. Tour. Done')
 
     const listing = await prismadb.listing.findUnique({
       where: {
@@ -92,9 +92,9 @@ export async function POST(req: NextRequest) {
           },
         },
       },
-    });
+    })
 
-    if (!listing) return NextResponse.json("LISTING NOT FOUND");
+    if (!listing) return NextResponse.json('LISTING NOT FOUND')
 
     await prismadb.message.create({
       data: {
@@ -102,10 +102,10 @@ export async function POST(req: NextRequest) {
         listingId,
         thread: {
           create: {
-            text: "New reservation request!",
+            text: 'New reservation request!',
             actions: [
-              { type: ActionTypes.btnAccept, label: "Accept" },
-              { type: ActionTypes.btnReject, label: "Decline" },
+              { type: ActionTypes.btnAccept, label: 'Accept' },
+              { type: ActionTypes.btnReject, label: 'Decline' },
             ],
             actionCategory: ActionCategories.approval,
             guestId: reservation.userId,
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
           },
         },
       },
-    });
+    })
 
     await axios.post(`${MODE_URL}/api/email/review-request`, {
       email: listing.host.hostEmail,
@@ -122,13 +122,13 @@ export async function POST(req: NextRequest) {
       listingName: listing.title,
       transactionId: event.data.object.id,
       amountPaid: event.data.object.amount_total,
-    });
+    })
 
-    return NextResponse.json("Received. Done");
+    return NextResponse.json('Received. Done')
   } catch (error: any) {
     return new NextResponse(`Webhook Error: ${error.message}`, {
       status: 500,
-    });
+    })
   }
 }
 
@@ -146,7 +146,7 @@ const updateReservationPayFail = async (
         paymentIntent,
         paymentStatus: PaymentStatus.failed,
       },
-    });
+    })
 
   return await prismadb.reservation.update({
     where: {
@@ -156,8 +156,8 @@ const updateReservationPayFail = async (
       paymentIntent,
       paymentStatus: PaymentStatus.failed,
     },
-  });
-};
+  })
+}
 
 const updateReservationPaySuccess = async (
   reservationId: string,
@@ -174,7 +174,7 @@ const updateReservationPaySuccess = async (
         paymentStatus: PaymentStatus.succeeded,
         paymentAt: new Date(),
       },
-    });
+    })
 
   return await prismadb.reservation.update({
     where: {
@@ -188,5 +188,5 @@ const updateReservationPaySuccess = async (
     include: {
       priceBreakup: true,
     },
-  });
-};
+  })
+}

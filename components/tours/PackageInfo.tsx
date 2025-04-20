@@ -146,9 +146,9 @@ export default function PackageInfo({
                           Day {activity.day < 9 && 0}
                           {activity.day + 1}
                         </span>
-                        {/*
+
                           <HotelDetailCard activity={activity} hotelDetails={hotelDetails}/>
-                          */}
+
                       </h5>
 
                       <div className="col-span-3 grid md:grid-cols-3 w-full gap-2 p-2">
