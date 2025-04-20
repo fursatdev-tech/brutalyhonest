@@ -1,26 +1,26 @@
-import { DayActivity, HotelDetails, PackageActivity } from "@prisma/client";
-import Image from "next/image";
-import { GiCheckMark, GiCrossMark } from "react-icons/gi";
-import { IoAirplaneOutline, IoLocationOutline } from "react-icons/io5";
-import { LuPlaneTakeoff } from "react-icons/lu";
+import { DayActivity, HotelDetails, PackageActivity } from '@prisma/client'
+import Image from 'next/image'
+import { GiCheckMark, GiCrossMark } from 'react-icons/gi'
+import { IoAirplaneOutline, IoLocationOutline } from 'react-icons/io5'
+import { LuPlaneTakeoff } from 'react-icons/lu'
 
-import ReactStarsWrapper from "@/components/tours/ReactStarsWrapper";
+import ReactStarsWrapper from '@/components/tours/ReactStarsWrapper'
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel";
-import HotelDetailCard from './HotelDetailCard';
+} from '@/components/ui/carousel'
+import HotelDetailCard from './HotelDetailCard'
 
 interface Props {
-  dayActivities: DayActivity[];
-  inclusions: string[];
-  exclusions: string[];
-  hotelDetails: HotelDetails[];
-  bookingScore: number[];
-  accommodationStar: number[];
+  dayActivities: DayActivity[]
+  inclusions: string[]
+  exclusions: string[]
+  hotelDetails: HotelDetails[]
+  bookingScore: number[]
+  accommodationStar: number[]
 }
 
 export default function PackageInfo({
@@ -32,21 +32,21 @@ export default function PackageInfo({
   accommodationStar,
 }: Props) {
   const groupByCity = () => {
-    let cityGroup: DayActivity[][] = [];
+    let cityGroup: DayActivity[][] = []
 
     dayActivities.forEach((dayActivity, index) => {
       if (index == 0 || index == dayActivities.length - 1)
-        cityGroup.push([dayActivity]);
+        cityGroup.push([dayActivity])
       else if (
         dayActivity.accomodationCity ==
         dayActivities[index - 1].accomodationCity
       )
-        cityGroup[cityGroup.length - 1].push(dayActivity);
-      else cityGroup.push([dayActivity]);
-    });
+        cityGroup[cityGroup.length - 1].push(dayActivity)
+      else cityGroup.push([dayActivity])
+    })
 
-    return cityGroup;
-  };
+    return cityGroup
+  }
 
   // const groupedByCity = dayActivities.reduce((acc, curr) => {
   //   const { accomodationCity } = curr;
@@ -57,14 +57,14 @@ export default function PackageInfo({
   //   return acc;
   // }, {} as { [city: string]: DayActivity[] });
 
-  const groupedByCity = groupByCity();
+  const groupedByCity = groupByCity()
 
   const Event = ({
     time,
     events,
   }: {
-    time: string;
-    events: PackageActivity[];
+    time: string
+    events: PackageActivity[]
   }) => {
     return (
       <div className="col-span-3 flex gap-2 flex-col md:col-span-1">
@@ -82,15 +82,15 @@ export default function PackageInfo({
           <p className="text-xs text-muted-foreground">At Leisure</p>
         )}
       </div>
-    );
-  };
+    )
+  }
 
   const InclusionExclusion = ({
     title,
     data,
   }: {
-    title: string;
-    data: string[];
+    title: string
+    data: string[]
   }) => {
     return (
       <div className=" space-y-3 p-6 col-span-2 md:col-span-1 ">
@@ -101,7 +101,7 @@ export default function PackageInfo({
             key={item + index}
             className="text-muted-foreground text-sm flex gap-3 items-center"
           >
-            {title === "Inclusions" ? (
+            {title === 'Inclusions' ? (
               <GiCheckMark className="text-green-500" />
             ) : (
               <GiCrossMark className="text-red-500" />
@@ -110,10 +110,10 @@ export default function PackageInfo({
           </p>
         ))}
       </div>
-    );
-  };
+    )
+  }
 
-  const lastIndex = Object.entries(groupedByCity).length - 1;
+  const lastIndex = Object.entries(groupedByCity).length - 1
 
   return (
     <>
@@ -143,11 +143,12 @@ export default function PackageInfo({
                     >
                       <h5 className="uppercase  md:flex-col  max-md:items-center max-md:justify-between  flex gap-2 px-2 justify-start max-md:border-b-2 text-muted-foreground py-1 pt-3 col-span-3 md:col-span-1 ">
                         <span>
-                        Day {activity.day < 9 && 0}
-                        {activity.day + 1}
+                          Day {activity.day < 9 && 0}
+                          {activity.day + 1}
                         </span>
-                        <HotelDetailCard activity={activity} hotelDetails={hotelDetails}/>
-
+                        {/*
+                          <HotelDetailCard activity={activity} hotelDetails={hotelDetails}/>
+                          */}
                       </h5>
 
                       <div className="col-span-3 grid md:grid-cols-3 w-full gap-2 p-2">
@@ -186,91 +187,87 @@ export default function PackageInfo({
       )}
 
       <div className="space-y-6 mt-6">
-        {hotelDetails.map((hotel, index) => (
-          <div
-            className="border shadow-sm rounded-xl grid grid-cols-3"
-            key={hotel.name}
-          >
-            <div className="col-span-3 bg-slate-50 rounded-t-xl px-4 py-3">
-              <h4 className="font-semibold">
-                {hotel.stay}N @ {hotel.name}
-              </h4>
-              <p className="text-muted-foreground text-xs md:text-sm flex items-center gap-1">
-                <IoLocationOutline size={16} />
-                <span>{hotel.address}</span>
-              </p>
-            </div>
-
-            <div className="col-span-3 md:col-span-1">
-              <Carousel className="group">
-                <CarouselContent>
-                  {hotel.photo.map((image) => (
-                    <CarouselItem
-                      key={image.id}
-                      className="relative w-full h-60 "
-                    >
-                      <Image
-                        src={`https://cf.bstatic.com${image.photoUri}`}
-                        fill
-                        alt="Property Image"
-                      />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="ml-14 hidden group-hover:flex transition" />
-                <CarouselNext className="mr-14 hidden group-hover:flex transition" />
-              </Carousel>
-            </div>
-
-            <div className="col-span-3 md:col-span-2 px-4 py-3 grid grid-cols-3 gap-4">
-              <div className="col-span-3 md:col-span-2 space-y-3">
-                <p className="text-muted-foreground text-xs font-semibold">
-                  ROOM DETAILS:
+        {hotelDetails.map((hotel, index) => {
+          return (
+            <div
+              className="border shadow-sm rounded-xl grid grid-cols-3"
+              key={hotel.name}
+            >
+              <div className="col-span-3 bg-slate-50 rounded-t-xl px-4 py-3">
+                <h4 className="font-semibold">
+                  {hotel.stay}N @ {hotel.name}
+                </h4>
+                <p className="text-muted-foreground text-xs md:text-sm flex items-center gap-1">
+                  <IoLocationOutline size={16} />
+                  <span>{hotel.address}</span>
                 </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {hotel.facilityHighlight.map((facility) => (
-                    <p
-                      key={facility.id}
-                      className="text-muted-foreground text-sm flex gap-3 items-center"
-                    >
-                      <GiCheckMark className="text-green-500" />
-                      {facility.title}
-                    </p>
-                  ))}
-                </div>
               </div>
 
-              <div className="col-span-3 md:col-span-1 order-first md:order-last text-center mx-auto flex gap-6 items-center md:block md:space-y-4">
-                <div>
-                  {!!accommodationStar[index] ? (
-                    <ReactStarsWrapper score={accommodationStar[index]} />
-                  ) : (
-                    <p className="text-sm">NA</p>
-                  )}
-                  <p className="text-muted-foreground text-xs font-light">
-                    Star Category
+              <div className="col-span-3 md:col-span-1">
+                <Carousel className="group">
+                  <CarouselContent>
+                    {hotel.photo.map((image) => {
+                      return (
+                        <CarouselItem
+                          key={image.id}
+                          className="relative w-full h-60 "
+                        >
+                          <Image
+                            src={`${image.photoUri}`}
+                            fill
+                            alt="Property Image"
+                          />
+                        </CarouselItem>
+                      )
+                    })}
+                  </CarouselContent>
+                  <CarouselPrevious className="ml-14 hidden group-hover:flex transition" />
+                  <CarouselNext className="mr-14 hidden group-hover:flex transition" />
+                </Carousel>
+              </div>
+
+              <div className="col-span-3 md:col-span-2 px-4 py-3 grid grid-cols-3 gap-4">
+                <div className="col-span-3 md:col-span-2 space-y-3">
+                  <p className="text-muted-foreground text-xs font-semibold">
+                    ROOM DETAILS:
                   </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {hotel.facilityHighlight.map((facility) => (
+                      <p
+                        key={facility.id}
+                        className="text-muted-foreground text-sm flex gap-3 items-center"
+                      >
+                        <GiCheckMark className="text-green-500" />
+                        {facility.title}
+                      </p>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <p className="font-bold">{bookingScore[index] || 'NA'}</p>
-                  <p className="text-muted-foreground text-xs font-light">
-                    On Booking.com
-                  </p>
+                <div className="col-span-3 md:col-span-1 order-first md:order-last text-center mx-auto flex gap-6 items-center md:block md:space-y-4">
+                  <div>
+                    {!!accommodationStar[index] ? (
+                      <ReactStarsWrapper score={accommodationStar[index]} />
+                    ) : (
+                      <p className="text-sm">NA</p>
+                    )}
+                    <p className="text-muted-foreground text-xs font-light">
+                      Star Category
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="font-bold">{bookingScore[index] || 'NA'}</p>
+                    <p className="text-muted-foreground text-xs font-light">
+                      On Booking.com
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <p className="col-span-3 border-t border-dotted px-4 py-3 hover:bg-orange-50 transition rounded-b-xl text-xs flex items-center">
-              <span className="border-2 border-orange-400 text-orange-400 font-bold px-2 py-1 rounded mr-3 h-fit">
-                FYI
-              </span>
-              Hotels may charge a caution deposit on your credit card. It will
-              be refunded within 10-15 days if there is no property damage.
-            </p>
-          </div>
-        ))}
+          )
+        })}
 
         <div className="border shadow-sm rounded-xl grid grid-cols-2">
           <InclusionExclusion title="Inclusions" data={inclusions} />

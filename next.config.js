@@ -8,6 +8,10 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "cf.bstatic.comhttps",
+      },
+      {
+        protocol: "https",
         hostname: "**.githubusercontent.com",
       },
       {
